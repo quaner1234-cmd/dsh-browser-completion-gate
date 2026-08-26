@@ -3,3 +3,7 @@
 
 # Machine-specific preflight backup (copies of local ~/.dsh web profile config)
 preflight-backup/
+
+# Deterministic fixture runtime state (state file + simulated downloads).
+# Recreated by POST /api/reset; never committed. The grader reads this dir.
+fixtures/state/

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reports — DSH fixture</title>
+<style>
+  body{font-family:system-ui,sans-serif;background:#f5f6f8;margin:0}
+  main{max-width:640px;margin:48px auto;background:#fff;border:1px solid #e2e4e8;border-radius:8px;padding:24px 32px}
+  h1{font-size:20px;margin:0 0 4px}
+  .muted{color:#667;font-size:13px}
+  .card{border:1px solid #e2e4e8;border-radius:8px;padding:16px;margin:14px 0}
+  .row{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+  button{padding:8px 16px;font-size:14px;border:none;border-radius:6px;background:#2a6df4;color:#fff;cursor:pointer}
+  button:disabled{opacity:.6}
+  #status{margin-top:14px;padding:10px 12px;border-radius:6px;font-size:14px;display:none}
+  #status.info{display:block;background:#eef4fd;color:#1d4f91;border:1px solid #c9dbf5}
+  #status.ok{display:block;background:#e8f7ee;color:#14663a;border:1px solid #b8e4c8}
+</style>
+</head>
+<body>
+<main>
+  <h1>Reports</h1>
+  <p class="muted">Monthly sales reports</p>
+  <div class="card">
+    <div><strong>Sales report &mdash; August 2026</strong>
+      <div class="muted">File: sales-report-2026-08.csv &middot; CSV</div>
+    </div>
+    <div class="row"><button id="dlbtn">Download</button></div>
+  </div>
+  <div id="status"></div>
+</main>
+<script>
+  const btn = document.getElementById('dlbtn')
+  const statusEl = document.getElementById('status')
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true
+    statusEl.textContent = ''
+    statusEl.className = ''
+    const r = await fetch('/api/download', { method: 'POST' })
+    const data = await r.json()
+    if (!data.ok) {
+      statusEl.textContent = data.message || 'Download failed'
+      statusEl.className = 'err'
+      btn.disabled = false
+      return
+    }
+    statusEl.textContent = 'Preparing download&hellip;'
+    statusEl.className = 'info'
+    const poll = setInterval(async () => {
+      const rr = await fetch('/api/download')
+      const dd = await rr.json()
+      if (dd.status === 'started') {
+        clearInterval(poll)
+        statusEl.textContent = 'Download started: ' + dd.fileName + ' &mdash; check your downloads folder.'
+        statusEl.className = 'ok'
+      }
+    }, 400)
+  })
+</script>
+</body>
+</html>
