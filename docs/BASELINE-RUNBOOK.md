@@ -23,6 +23,27 @@ It must not be shown:
 
 The later Completion Gate arm must use the same runner workspace policy, model/provider/settings, task prompts, browser plugin/environment, and fixture schedule. The Gate is the intended independent variable.
 
+## Browser window isolation
+
+The DSH observation UI and the browser-controlled task tab must be separate.
+
+Use two Chrome windows during formal trials:
+
+- **Observer window**: DSH Web GUI (`http://127.0.0.1:3080`) for watching the agent trajectory, tool calls, session state, and logs. This window must never be the controlled browser tab.
+- **Execution window**: the fixture page (`http://127.0.0.1:4017/...`) with the **dsh Browser Assistant** side panel open. The tested agent's browser session must bind to this fixture tab.
+
+Do not submit the tested-agent task from the DSH Web GUI tab and then switch tabs hoping the browser bridge will follow. `dsh-browser` binds browser control to the active/user-selected tab; manual tab changes can trigger affinity prompts and introduce extra human interaction/state.
+
+For every formal trial:
+
+1. Open or focus the intended fixture page in the execution window.
+2. Confirm the Browser Assistant is connected to that fixture tab before the tested-agent prompt is submitted.
+3. Keep the observer window on the DSH Web GUI for the whole trial.
+4. Do not manually retarget the controlled tab during the trial.
+5. If control binds to the observer/DSH GUI tab, or a tab-affinity prompt requires human rescue, mark the run infrastructure-invalid and repeat the same task/mode in a fresh session.
+
+The later Completion Gate arm must use the same two-window arrangement so UI observation does not become a confounding variable.
+
 ## Session isolation
 
 Every trial uses a fresh agent session. Do not run multiple formal trials inside one conversation/context.
@@ -109,6 +130,7 @@ Infrastructure failures and model/task failures must be distinguished.
 Formal baseline collection is complete only when:
 - 18 valid trials exist (6/task) under the pre-registered schedule;
 - every trial used a fresh neutral runner session;
+- every trial used the observer/execution window separation above;
 - no Completion Gate was present;
 - no experiment-design/grader leakage occurred;
 - result records and evidence are complete;
