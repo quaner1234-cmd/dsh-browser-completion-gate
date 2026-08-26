@@ -14,10 +14,11 @@ Design and prepare three reproducible baseline browser tasks before implementing
 - Bridge verified end-to-end (VERDICT PASS): all 11 browser_* tools registered and real parameterized calls succeed against the running process.
 - dsh-browser environment is frozen/documented for baseline use; relevant tests pass.
 - Repository synchronization failure was observed and converted into a verification rule: local commit alone is not PASS; authoritative remote state must be verified.
+- Baseline experiment design is defined in `docs/BASELINE-DESIGN.md`.
 
 ## Immediate task
 
-Design three baseline tasks that can expose false-success behavior under the existing browser agent, without adding a Completion Gate.
+Read `docs/BASELINE-DESIGN.md`, then prepare the three baseline tasks described there without adding a Completion Gate.
 
 Requirements:
 - tasks must be repeatable and low-risk;
