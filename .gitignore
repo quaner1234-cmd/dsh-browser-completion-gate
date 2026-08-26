@@ -1,0 +1,5 @@
+# macOS
+.DS_Store
+
+# Machine-specific preflight backup (copies of local ~/.dsh web profile config)
+preflight-backup/
