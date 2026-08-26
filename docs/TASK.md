@@ -10,8 +10,10 @@ false-success outcomes compared with agent self-judgment.
 Formal baseline collection under the blinded runner protocol in
 `docs/BASELINE-RUNBOOK.md` is complete and PASS (18 valid trials, 6/task,
 pre-registered schedule; see `results/baseline.jsonl` + `results/baseline.md`).
-No Completion Gate has been implemented. Next: implement the minimum
-Completion Gate and run the controlled comparison arm.
+The minimum Completion Gate prototype is built, tested and pushed on branch
+`prototype/minimum-completion-gate` (`gate/`), NOT activated in the baseline
+runtime. Next: write the Completion-Gate runbook (pre-registered condition
+sets per task) and run the controlled comparison arm in a fresh runtime.
 
 ## Status (2026-08-27 early)
 
@@ -54,5 +56,5 @@ trial/mode schedule, and record the arm in `results/gate.jsonl` +
 
 1. ✅ formal baseline trials without Completion Gate (18 valid trials, blinded fresh sessions) — DONE, `results/baseline.jsonl` + `results/baseline.md`;
 2. ✅ measure false-success rate and time-to-verified-completion — DONE for the baseline arm (4/18 false success; all in task-3 deceptive modes);
-3. implement the minimum Completion Gate;
-4. run controlled comparison with all other variables held constant.
+3. 🚧 minimum Completion Gate prototype — DONE on `prototype/minimum-completion-gate` (`gate/`: `completion_gate_check` tool, deterministic receipts, 24/24 tests); runtime activation intentionally left to a human (baseline runtime untouched);
+4. write the Completion-Gate runbook (condition sets + schedule) and run the controlled comparison with all other variables held constant.
