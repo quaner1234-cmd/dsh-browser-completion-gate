@@ -1,5 +1,9 @@
 # Minimum Completion Gate — controlled comparison design
 
+> **ARCHIVED V0 DESIGN — NOT ACTIVE INSTRUCTIONS.**
+>
+> This design was written for the old V0 browser environment and was superseded after Gate calibration exposed cross-session/tab leakage. Current work is defined by `docs/TASK.md` and `docs/EXPERIMENT-V1.md`. Do not use the browser-environment freeze or execution instructions below to drive V1 work.
+
 ## Purpose
 
 Test whether moving completion acceptance outside the browser agent reduces system-level false success.
@@ -10,7 +14,7 @@ The Gate arm must keep the model/provider, fixed task wording, fixture behavior,
 
 ## What the minimum Gate is
 
-The V1 Gate is a harness-level completion interceptor operated outside the tested agent. It is NOT:
+The V0 Gate is a harness-level completion interceptor operated outside the tested agent. It is NOT:
 
 - another browser controller;
 - a prompt-only instruction to "double-check";
@@ -122,8 +126,6 @@ Also report:
 
 Because the Gate uses deterministic conditions closely related to the evaluator, a reduction in system false success is expected by construction. The informative questions are therefore interception coverage, repair behavior, overhead, and whether the mechanism causes regressions on already-successful tasks.
 
-## Scope after this experiment
+## Historical scope
 
-This design is the minimum experimental Gate. Do not modify dsh-browser or build a generalized plugin before the controlled Gate arm is complete.
-
-If the controlled comparison is useful, the next engineering phase can move the proven state machine into a reusable DSH plugin/harness hook with generic assertion adapters.
+This file documents the minimum Gate state machine proven during V0 calibration. Its environment constraints are superseded for V1. If the controlled V1 comparison is useful, a later engineering phase may move the proven state machine into a reusable DSH plugin/harness hook with generic assertion adapters.
