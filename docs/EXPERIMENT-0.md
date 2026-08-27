@@ -1,5 +1,7 @@
 # Experiment 0 — Bare DSH Preflight
 
+> Historical preflight evidence only. This file predates the controlled V0/V1 comparison naming. It is **not** `docs/EXPERIMENT-V0.md` and is not an active instruction source.
+
 ## Purpose
 
 Observe DSH behavior before adding project-specific Harness rules, and establish the real browser-control baseline.
@@ -16,4 +18,4 @@ Observe DSH behavior before adding project-specific Harness rules, and establish
 
 ## Result
 
-Experiment 0 is complete. Subsequent work should run under the project Harness defined by `AGENTS.md`, `docs/TASK.md`, `docs/AUTONOMY.md`, and `docs/VERIFY.md`.
+Experiment 0 is complete. Current work is governed by `AGENTS.md` and the active milestone in `docs/TASK.md`.
