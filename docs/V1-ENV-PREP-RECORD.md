@@ -135,3 +135,49 @@ milestone):
 V0 evidence (`results/baseline.*`, `POST-RESTART-VERIFICATION.md`,
 `~/.dsh/dsh-browser.prev-2026-08-27`, `~/.dsh/browser-extension.prev-2026-08-27`)
 is preserved untouched.
+---
+
+# Addendum — Runtime verification round 1 (2026-08-28 00:06 CST)
+
+Status: **BLOCKED** (runtime chain not yet on the pinned build; one human
+Chrome-GUI action + one real DSH restart required).
+
+## Evidence
+
+1. `/ext/bridge-config` → HTTP 200, `{"wsUrl":"ws://127.0.0.1:3080/ext/bridge"}`.
+2. **The claimed DSH restart did not take effect**: sole listener on 3080 is
+   PID 876 booted `2026-08-27 20:46:02` — BEFORE the 23:44 pinned swap.
+   `launcher.log` shows the 23:52:14 `start-dsh.sh` attempt exited via
+   "already listening" (the script never restarts a busy port).
+3. `Tool.listTools` (authoritative): **all 11 browser_* tools registered**, but
+   with the OLD build schemas (no `frame` parameter; old Chinese descriptions) —
+   confirming the pre-pin in-memory build is still serving.
+4. Parameterized call `browser_snapshot` → **error "no browser extension is
+   connected to the bridge"**. Root-caused from the pinned extension source:
+   the new extension is designed to never probe/claim the bridge until the
+   side panel is opened (`background/index.ts:7`; discovery loop gated on
+   `panelPorts.size > 0`, lines 925/973) — expected behavior after a reload
+   without opening the panel.
+5. Bridge WS layer itself is healthy: token hello with the canonical caps →
+   `hello.ok` accepted (session/subscribed events streamed). My first probe
+   got `1008` only because its caps were incomplete.
+6. Per-session tab affinity: **NOT live at runtime** (old bridge in memory).
+   Pinned-code evidence stands: 413 tests passed incl. tab-affinity (10),
+   rebind (4), session layers (44).
+7. Re-registration with the new package name: NOT required so far — the bundle
+   entry + symlink resolve the pinned package by path; all pinned lib runtime
+   imports (schemastery, ws, dsh-host-apiproxy, dsh-home-paths) resolve from
+   the pinned node_modules. Definitive proof arrives only at the next real boot.
+8. Dedicated Chrome profile: not needed for this round; required (human setup)
+   before any formal V1 trial, per `docs/EXPERIMENT-V1.md`.
+
+## Human actions required before re-verification
+
+1. Open the "dsh 浏览器助手" side panel in Chrome once (extension icon) —
+   the new design requires it to claim the bridge connection.
+2. Really restart DSH: `kill 876` then `~/.dsh/start-dsh.sh` (a plain
+   `start-dsh.sh` run will again hit "already listening").
+3. After restart: re-run this verification round — expect new schemas with
+   `frame` params, panel-connected parameterized tools, then the
+   per-session tab-affinity checks (possibly with the dedicated profile,
+   human-set-up, before any trial).
