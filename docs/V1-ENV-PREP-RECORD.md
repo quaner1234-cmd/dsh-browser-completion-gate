@@ -181,3 +181,48 @@ Chrome-GUI action + one real DSH restart required).
    `frame` params, panel-connected parameterized tools, then the
    per-session tab-affinity checks (possibly with the dedicated profile,
    human-set-up, before any trial).
+
+---
+
+# Addendum 2 — Runtime verification round 2 (2026-08-28 ~00:40 CST)
+
+Status: **BLOCKED** (one human Chrome-GUI action pending; everything else verified).
+
+## Evidence
+
+1. **Process**: PID **12865** (node …/.bin/dsh web --no-open), started
+   **2026-08-28 00:34:20** — a real restart AFTER the 23:44 pinned swap
+   (launcher.log shows actual spawns at 00:30:34 and 00:34:20; earlier 23:52
+   attempt had hit "already listening").
+2. **/ext/bridge-config**: HTTP 200, `{"wsUrl":"ws://127.0.0.1:3080/ext/bridge"}`.
+3. **Pinned bridge live in the runtime**: `Tool.listTools` schemas now match
+   the pinned `src/tools.ts` verbatim (new English descriptions +
+   UNTRUSTED_CONTENT_WARNING; `frame` params on click/type/press/scroll/
+   get_text/wait; snapshot keeps only delta/region per source). Previous round
+   these were the old Chinese schemas without `frame`.
+4. **Registration**: bundles list = `@yuxianglin/dsh-bridge-browser`
+   (`@deepseek-ai/dsh-bridge-browser` entry removed); scoped symlink
+   `profiles/web/node_modules/@yuxianglin/dsh-bridge-browser → …/dsh-browser/
+   packages/browser/bridge-browser` (built lib present). Leftover: the old
+   `@deepseek-ai/dsh-bridge-browser` symlink still exists on disk (8/15) but is
+   no longer referenced — dormant, harmless.
+5. **11 browser_* tools**: all registered (snapshot/click/type/press/scroll/
+   navigate/back/forward/reload/get_text/wait).
+6. **Parameterized call** `browser_snapshot` → **fail-closed error**:
+   `content-unavailable: "The controlled tab was closed. Select the current
+   page in the side panel before retrying."` This string exists ONLY in the
+   pinned extension (`background/index.ts:659`; panel strings.ts:256
+   `lostTitle`), 0 occurrences in the old builds — i.e. the per-session
+   controlled-tab gate is LIVE and refused to silently fall back.
+7. **Extension is connected**: the reply came from the extension's tool
+   dispatch (a broken chain would yield "no browser extension is connected").
+8. Tab-affinity mechanism verified reachable; full multi-session invariant set
+   (two sessions/two tabs, no retarget on focus switch, SW-restore, tab-close
+   fallback) belongs to the controlled environment step with the dedicated
+   execution profile (per `docs/EXPERIMENT-V1.md`).
+
+## Pending human action (GUI)
+
+In the open dsh side panel, select the current page for this session (the
+panel tab-handoff prompt shows the lost controlled tab; reselect the target
+page), then say continue. No restart/reload needed.
