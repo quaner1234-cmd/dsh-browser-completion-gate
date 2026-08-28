@@ -2,68 +2,45 @@
 
 ## Current phase
 
-Plugin MVP engineering.
+MVP user acceptance and freeze.
 
-The project is no longer pursuing V1 formal experiment setup. The dedicated-profile / dual-session control experiment, Baseline V1 18-trial arm, Gate V1 18-trial arm, and formal runbook are FROZEN and NOT active work.
+The Completion Gate plugin MVP has been implemented and live-smoke-tested on this branch. Formal experiment work remains frozen. The purpose of this milestone is only to verify that the README path works from a clean DSH session and then freeze the MVP.
 
-Existing evidence is sufficient to proceed:
-
-- the false-success failure mode has been reproduced;
-- dsh-browser is pinned at `122de0e45ee97cba3428920d3d48b16e646b6db4`;
-- current-session runtime smoke verification passed;
-- the existing Completion Gate core/tool implementation and automated tests already exist on this branch.
-
-## Immediate milestone — make the plugin usable
-
-Turn the existing Completion Gate prototype into the smallest practical DSH plugin MVP.
-
-Read `gate/README.md` first. Reuse the existing implementation; do not redesign from scratch.
+## Immediate milestone — clean-session acceptance
 
 Do only this milestone:
 
-1. Inspect the current gate implementation and identify the minimum missing pieces between the existing prototype and an installable/usable DSH plugin.
-2. Package/organize it so a normal user can install or activate it with a short documented procedure rather than pasting generated internals manually where avoidable.
-3. Preserve the existing `completion_gate_check` behavior and structured PASS / FAIL / BLOCKED receipts.
-4. Provide a minimal user-facing way to define completion conditions for at least:
-   - file existence/non-empty;
-   - JSON exact state;
-   - browser URL/text/selector checks.
-5. Use the smallest viable completion-enforcement mechanism supported by current DSH APIs. If DSH cannot truly veto turn completion, do NOT invent a large new loop framework. Clearly expose the limitation and use the narrowest practical contract/guard/tool integration available.
-6. Run the existing automated tests plus any small tests needed for packaging/integration changes.
-7. Perform one minimal live smoke test in DSH if it can be done without restarting DSH or manipulating Chrome/profile state. The goal is only to prove the plugin can load and `completion_gate_check` returns a real receipt. Do not run comparative trials.
-8. Update the user-facing README with:
-   - what the plugin does;
-   - installation/activation;
-   - one minimal example;
-   - current limitations.
-9. Commit and push all MVP changes to `prototype/minimum-completion-gate` and report exactly what is usable now.
+1. Start from a fresh DSH session using the repository as workspace and the preset required by `gate/README.md`.
+2. Follow the README activation path as written. Do not use hidden state from the previous development session.
+3. Verify the plugin reaches `running` and registers `completion_gate_check`.
+4. Perform exactly three small acceptance calls:
+   - one deterministic PASS;
+   - one deterministic FAIL;
+   - one deterministic BLOCKED.
+5. Confirm the receipts contain the documented structured evidence (`overall`, `checks`, expected/observed/reason where applicable).
+6. If practical in the same clean session, perform one guard check: arm one harmless tool name on FAIL/BLOCKED and confirm it is denied; obtain PASS and confirm it is released.
+7. If any README step is ambiguous or fails, make the smallest documentation/packaging fix needed and rerun only the failed acceptance step.
+8. Record a short acceptance note in the repository and push it.
 
-## Definition of DONE for this milestone
+## Definition of DONE
 
-DONE means a user can follow the README to activate the plugin and successfully call `completion_gate_check` to obtain a deterministic PASS / FAIL / BLOCKED receipt in DSH.
+DONE means a fresh DSH session can follow `gate/README.md` and activate the plugin without development-session knowledge, then obtain real PASS / FAIL / BLOCKED receipts.
 
-Do not require formal experimental evidence to call this milestone done.
+Once this passes, STOP development. Do not add more features.
 
-## Human Gate
+## After PASS
 
-Stop and ask only if the remaining step requires one of these:
-
-- restarting/terminating DSH;
-- reloading/closing/manipulating Chrome or Chrome profiles;
-- credential/security interaction;
-- destructive system changes.
-
-Do not ask the human to perform experiment-only setup.
+Report that the MVP is ready to freeze as `v0.1.0`. The next repository action is release hygiene only: merge the working branch to `main` and create a version tag/release if the human wants to publish it.
 
 ## Not authorized
 
-- no dual-session/tab-affinity experiment;
-- no dedicated-profile experiment work;
-- no Baseline V1 or Gate V1 trial collection;
-- no 18+18 experiment;
-- no V1 formal runbook;
+- no formal experiments;
+- no Baseline/Gate trial collection;
+- no dedicated-profile or dual-session testing;
 - no statistical benchmarking;
-- no new browser-control framework;
-- no unrelated dependency upgrades.
+- no new completion-loop framework;
+- no new condition types;
+- no unrelated refactors or dependency upgrades;
+- no feature expansion after acceptance passes.
 
-If the plugin MVP becomes usable, STOP. Research mode may resume only if the human explicitly requests it.
+If acceptance passes, STOP.
