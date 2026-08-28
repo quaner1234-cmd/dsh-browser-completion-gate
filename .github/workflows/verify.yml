@@ -18,10 +18,13 @@ jobs:
       - name: Install package peers
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Run existing Completion Gate tests
+      - name: Run full existing Completion Gate test suite
         run: |
           test ! -e fixtures/state/state.json
-          node --test-name-pattern='^(?!.*live experiment fixture).*' --test gate/gate-core.test.js gate/plugin-shell.test.js gate/check-agreement.test.js
+          mkdir -p fixtures/state
+          printf '%s\n' '{"ci_fixture":"must remain unchanged"}' > fixtures/state/state.json
+          node --test gate/gate-core.test.js gate/plugin-shell.test.js gate/check-agreement.test.js
+          rm -rf fixtures/state
           test ! -e fixtures/state/state.json
 
       - name: Verify standard DSH plugin entry registers the tool
