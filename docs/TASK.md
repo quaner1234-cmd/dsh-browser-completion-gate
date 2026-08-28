@@ -2,43 +2,47 @@
 
 ## Current phase
 
-MVP frozen — v0.1.0 release candidate.
+Distribution / discoverability packaging for the frozen v0.1.0 verification core.
 
-Clean-session acceptance passed and is recorded in `docs/ACCEPTANCE-clean-session.md`.
+The human explicitly authorized making the existing plugin easier for people and agents to find and install. This milestone may change repository metadata, packaging, installation entry points, README/search text, and machine-readable discovery files, but it must not change the verification semantics of the v0.1.0 core.
 
-The plugin is usable now:
+## Existing verified behavior — keep unchanged
 
 - `completion_gate_check` returns deterministic PASS / FAIL / BLOCKED receipts;
 - file, JSON-state, and browser conditions are supported;
 - `conditionsPath` provides a user-editable condition definition path;
 - the narrow per-agent tool guard works within the current DSH API limits;
-- the README documents activation, examples, and the hard limitation that DSH cannot veto a model turn that ends without any tool call.
+- DSH still cannot veto a model turn that ends without any tool call.
 
-## Status
+## Milestone scope
 
-Development is complete for v0.1.0.
+Allowed work:
 
-No active engineering or experiment milestone remains.
+1. add a standard DSH bundle manifest and normal plugin entry that reuses `gate/gate-core.js`;
+2. preserve the existing dynamic Host activation path as a fallback;
+3. improve README wording for human and semantic search;
+4. add machine-readable discovery metadata such as `llms.txt` and package keywords;
+5. add CI/smoke checks for the existing core and new packaging;
+6. prepare the repository for `dsh-plugin` topic / ecosystem registry discovery.
 
-## Release hygiene only
+Do not add new condition types, new automation behavior, a new browser layer, new experiments, or unrelated refactors.
 
-Allowed repository-only actions:
+## PASS criteria
 
-1. fast-forward the accepted working branch into `main`;
-2. create a `v0.1.0` tag/release;
-3. preserve `prototype/minimum-completion-gate` as historical development evidence if useful.
+This milestone is complete only when:
 
-Do not change plugin behavior during release hygiene.
+- existing gate tests still pass;
+- the standard package entry can be imported and registers `completion_gate_check`;
+- `npm pack --dry-run` includes the intended bundle files;
+- `package.json` exposes `dsh.bundle.patch` and `cordis.patch.yml` points at this package;
+- README documents the current `dsh plugin --profile <profile> add ...` installation form and the existing hard limitation;
+- the intended state is merged to the authoritative remote `main` branch;
+- any repository settings that cannot be changed through the available GitHub connector are reported explicitly rather than claimed complete.
 
-## Not authorized unless the human explicitly starts a new milestone
+## Out of scope unless separately authorized
 
-- no formal experiments;
-- no Baseline/Gate trial collection;
-- no dedicated-profile or dual-session testing;
-- no statistical benchmarking;
-- no new completion-loop framework;
-- no new condition types;
-- no unrelated refactors or dependency upgrades;
-- no feature expansion.
-
-If no explicit new milestone is given, remain frozen at v0.1.0 candidate.
+- runtime behavior changes;
+- formal experiments or statistical benchmarking;
+- additional completion-loop framework work;
+- new condition types;
+- unrelated refactors or dependency upgrades.
