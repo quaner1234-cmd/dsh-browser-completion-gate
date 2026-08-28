@@ -21,7 +21,7 @@ jobs:
       - name: Run existing Completion Gate tests
         run: |
           test ! -e fixtures/state/state.json
-          node --test --test-name-pattern='^(?!fixture integration: the live experiment fixture/state/ dir is never touched by tests$).*' gate/gate-core.test.js gate/plugin-shell.test.js gate/check-agreement.test.js
+          node --test-name-pattern='^(?!.*live experiment fixture).*' --test gate/gate-core.test.js gate/plugin-shell.test.js gate/check-agreement.test.js
           test ! -e fixtures/state/state.json
 
       - name: Verify standard DSH plugin entry registers the tool
