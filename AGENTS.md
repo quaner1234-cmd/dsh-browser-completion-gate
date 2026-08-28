@@ -2,12 +2,26 @@
 
 ## Project
 
-This project experiments with a deterministic Browser Completion Gate for DSH.
+Build a usable Browser Completion Gate plugin MVP for DSH.
+
+The plugin is the deliverable. Research, benchmarks, and experiments are supporting activities only.
 
 - Reuse dsh-browser for browser control.
 - Do NOT build another browser automation framework.
 - Keep scope narrow.
 - Prefer the smallest verifiable change.
+- Default to engineering mode, not research mode.
+
+## Project-level stopping / escalation rule
+
+Use only the minimum evidence needed to decide the next engineering step.
+
+Do not introduce formal A/B experiments, statistical benchmarking, additional experiment infrastructure, or research-grade controls unless one of these is true:
+
+1. they are required to unblock a usable plugin MVP; or
+2. the human explicitly switches the project into research mode.
+
+If a real failure mode has already been reproduced and the proposed fix passes a direct regression/smoke check, continue building the plugin instead of increasing experimental rigor.
 
 ## Active instruction map
 
