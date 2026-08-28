@@ -1,0 +1,41 @@
+{
+  "name": "dsh-browser-completion-gate",
+  "version": "0.1.0",
+  "description": "Deterministic proof-of-completion for DeepSeek Harness browser agents. Verify browser state, files, and JSON before trusting an agent's done message.",
+  "main": "./index.mjs",
+  "files": [
+    "index.mjs",
+    "cordis.patch.yml",
+    "README.md",
+    "llms.txt",
+    "gate/gate-core.js",
+    "gate/plugin-host.generated.js",
+    "gate/README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "browser-agent",
+    "agent-verification",
+    "completion-gate",
+    "proof-of-completion",
+    "harness-engineering"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/quaner1234-cmd/dsh-browser-completion-gate.git"
+  },
+  "homepage": "https://github.com/quaner1234-cmd/dsh-browser-completion-gate#readme",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": ">=0.1.0-rc.1 <1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
