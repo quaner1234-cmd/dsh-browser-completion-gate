@@ -2,9 +2,16 @@
 
 ## Current phase
 
-Distribution / discoverability packaging for the frozen v0.1.0 verification core.
+Distribution / discoverability packaging is complete for the frozen v0.1.0 verification core.
 
-The human explicitly authorized making the existing plugin easier for people and agents to find and install. This milestone may change repository metadata, packaging, installation entry points, README/search text, and machine-readable discovery files, but it must not change the verification semantics of the v0.1.0 core.
+The standard bundle packaging, direct GitHub install path, search-oriented README copy, machine-readable discovery metadata, and CI verification are merged to `main`. The verification semantics of the v0.1.0 core were not changed.
+
+Two repository-level discovery settings remain outside the available GitHub connector and require owner action in the GitHub UI:
+
+1. improve the repository **Description**;
+2. add GitHub **Topics**, especially `dsh-plugin`.
+
+Those settings are intentionally recorded as external follow-up rather than silently treated as complete.
 
 ## Existing verified behavior — keep unchanged
 
@@ -14,30 +21,42 @@ The human explicitly authorized making the existing plugin easier for people and
 - the narrow per-agent tool guard works within the current DSH API limits;
 - DSH still cannot veto a model turn that ends without any tool call.
 
-## Milestone scope
+## Completed milestone
 
-Allowed work:
+- standard DSH bundle manifest added;
+- normal plugin entry reuses `gate/gate-core.js`;
+- existing dynamic Host activation path preserved as fallback;
+- README rewritten for human and semantic search;
+- `llms.txt` and package keywords added for machine-readable discovery;
+- CI verifies the full existing gate test suite, standard entry registration, bundle metadata, and packed payload;
+- direct GitHub install form documented.
 
-1. add a standard DSH bundle manifest and normal plugin entry that reuses `gate/gate-core.js`;
-2. preserve the existing dynamic Host activation path as a fallback;
-3. improve README wording for human and semantic search;
-4. add machine-readable discovery metadata such as `llms.txt` and package keywords;
-5. add CI/smoke checks for the existing core and new packaging;
-6. prepare the repository for `dsh-plugin` topic / ecosystem registry discovery.
+## Verification evidence
 
-Do not add new condition types, new automation behavior, a new browser layer, new experiments, or unrelated refactors.
+The authoritative `main` CI run after merge passed all checks, including:
 
-## PASS criteria
+- full existing Completion Gate test suite;
+- standard DSH plugin entry registration of `completion_gate_check`;
+- `dsh.bundle` / `cordis.patch.yml` metadata checks;
+- `npm pack --dry-run`.
 
-This milestone is complete only when:
+## External follow-up
 
-- existing gate tests still pass;
-- the standard package entry can be imported and registers `completion_gate_check`;
-- `npm pack --dry-run` includes the intended bundle files;
-- `package.json` exposes `dsh.bundle.patch` and `cordis.patch.yml` points at this package;
-- README documents the current `dsh plugin --profile <profile> add ...` installation form and the existing hard limitation;
-- the intended state is merged to the authoritative remote `main` branch;
-- any repository settings that cannot be changed through the available GitHub connector are reported explicitly rather than claimed complete.
+Recommended GitHub Description:
+
+> Deterministic proof-of-completion for DeepSeek Harness browser agents. Verify browser state, files and JSON before trusting an agent's done message.
+
+Recommended Topics:
+
+- `dsh-plugin`
+- `deepseek-harness`
+- `dsh`
+- `browser-agent`
+- `agent-verification`
+- `completion-gate`
+- `harness-engineering`
+
+Once the `dsh-plugin` topic is present, GitHub-topic-driven community discovery/marketplace indexers can discover the repository automatically; curated registries may still require their own review or submission process.
 
 ## Out of scope unless separately authorized
 
