@@ -21,6 +21,29 @@ Those settings are intentionally recorded as external follow-up rather than sile
 - the narrow per-agent tool guard works within the current DSH API limits;
 - DSH still cannot veto a model turn that ends without any tool call.
 
+## Repository hygiene pass (2026-08-28) — cleanup only, no behavior change
+
+- `index.mjs` (standard DSH bundle entry) confirmed as the **primary runtime**;
+  the dynamic Host path (`gate/plugin-shell.js` / `build-plugin.js` /
+  `plugin-host.generated.js`) is documented everywhere as
+  **legacy / compatibility fallback** (root README, `gate/README.md`, code
+  headers) and remains in place, not removed.
+- Repository structure mapped in the root README (Runtime / Legacy
+  compatibility / Tests / Historical experiments / Agent instructions);
+  experiment-era files were NOT moved (references are pervasive and the
+  records are cross-linked); nothing was deleted.
+- Agent instructions updated (AGENTS.md, docs/VERIFY.md): an agent's own
+  "done" is not verification; browser-adapter changes require a live
+  DSH + dsh-browser smoke test (fake-browser suites cannot prove the live
+  path); tests must never be deleted/skipped/relaxed to make CI green.
+- Known risks recorded (root README + `gate/README.md`): `parseSnapshot()`
+  depends on the dsh-browser text-snapshot labels (not a stable API; fails
+  closed); `index.mjs` ↔ `gate/plugin-shell.js` duplication is deliberate
+  technical debt, not refactored.
+- Verified: full test suite green, `index.mjs` registers
+  `completion_gate_check`, `npm pack --dry-run` OK. No runtime behavior
+  changed; `gate/gate-core.js` untouched.
+
 ## Completed milestone
 
 - standard DSH bundle manifest added;

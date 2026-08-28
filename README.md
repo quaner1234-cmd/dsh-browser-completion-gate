@@ -32,11 +32,60 @@ For reproducible use, pin the Git dependency to a reviewed commit SHA instead of
 
 After installation, use the profile normally and call `completion_gate_check` with inline `conditions` or a `conditionsPath` JSON file.
 
-### Dynamic Host fallback
+### Legacy / compatibility fallback — dynamic Host plugin
 
-The original no-package activation path is still available. Open a DSH session with the Cordis plugin tools, read `gate/plugin-host.generated.js`, define it with `cordis_define`, and run it with `cordis_run`. This keeps the v0.1.0 dynamic Host workflow available for debugging and compatibility.
+The original no-package activation path is kept as a **legacy / compatibility
+fallback** for debugging and for setups that cannot install the bundle.
+**New setups should use the standard bundle above.** To use it, open a DSH
+session with the Cordis plugin tools, read `gate/plugin-host.generated.js`,
+define it with `cordis_define`, and run it with `cordis_run`. Both paths
+evaluate the same frozen `gate/gate-core.js` with identical
+PASS / FAIL / BLOCKED semantics.
 
-See [`gate/README.md`](gate/README.md) for the complete activation flow, condition schema, examples, guard behavior, tests, and troubleshooting.
+See [`gate/README.md`](gate/README.md) for the complete activation flow
+(bundle and legacy), condition schema, examples, guard behavior, tests, and
+troubleshooting.
+
+## Repository structure
+
+```
+Runtime / product
+├── index.mjs                  standard DSH bundle entry (primary runtime)
+├── gate/gate-core.js          frozen v0.1.0 verification core (PASS / FAIL / BLOCKED)
+├── package.json               bundle manifest (dsh.bundle → cordis.patch.yml)
+└── cordis.patch.yml           bundle patch layer
+
+Legacy compatibility (dynamic Host path — kept, not primary)
+├── gate/plugin-shell.js
+├── gate/build-plugin.js
+└── gate/plugin-host.generated.js
+
+Tests
+├── gate/gate-core.test.js
+├── gate/plugin-shell.test.js
+└── gate/check-agreement.test.js
+
+Historical experiments / evidence (kept for provenance, not active work)
+├── fixtures/                  deterministic fixture server, pages, grader, constants
+├── tasks/                     baseline task prompts (task-1/2/3)
+├── results/                   pilot / baseline / gate-checker-agreement records
+├── docs/BASELINE-*.md, docs/EXPERIMENT-*.md, docs/GATE-*.md,
+│   docs/FIXTURE-SPEC.md, docs/V1-ENV-PREP-RECORD.md
+├── docs/ACCEPTANCE-clean-session.md
+└── POST-RESTART-VERIFICATION.md
+
+Agent / project instructions
+├── AGENTS.md
+├── docs/TASK.md
+├── docs/VERIFY.md
+└── docs/AUTONOMY.md
+```
+
+The frozen verification semantics live entirely in `gate/gate-core.js`; both
+runtime entries evaluate the same core. The experiments under `fixtures/`,
+`tasks/`, `results/` and the historical docs are pre-MVP evidence — they are
+**not** part of the plugin's runtime path and are intentionally left in place,
+cross-referenced by the experiment records rather than moved.
 
 ## What it can verify
 
@@ -89,6 +138,23 @@ The v0.1.0 implementation provides the narrowest available enforcement: an optio
 
 This limitation is documented rather than hidden.
 
+## Maintenance notes
+
+- `index.mjs` and `gate/plugin-shell.js` intentionally duplicate the
+  browser-adapter and guard helpers (agentTools, ensureGuard, randomId,
+  agentCwd, dispatchBrowser, parseSnapshot, makeProbes, gateGuard). This is
+  recorded technical debt, not an accident: the legacy body must stay a
+  self-contained pastable function, so sharing would require changing the
+  legacy embedding build. Do not abstract this away without a coordinated
+  change; details in [`gate/README.md`](gate/README.md).
+- `parseSnapshot()` depends on the dsh-browser text-snapshot labels
+  (`URL:` / `正文:` / `交互元素` / `表单字段`), which are an observed output
+  format rather than a stable API. Any parse mismatch fails closed (BLOCKED /
+  FAIL, never silent PASS). Recorded as risk, not redesigned here.
+- Changing browser-adapter code requires a live DSH + dsh-browser smoke test;
+  the unit suites drive fake browser probes and cannot prove the live path
+  (see [`docs/VERIFY.md`](docs/VERIFY.md)).
+
 ## For agents and search systems
 
 Machine-readable project summary: [`llms.txt`](llms.txt).
@@ -106,6 +172,9 @@ Read [`AGENTS.md`](AGENTS.md) first. It defines the project goal, scope, active-
 - **Verification core:** `v0.1.0`
 - **MVP status:** released and usable
 - **Standard bundle packaging:** added for direct GitHub installation
+- **Repository state:** cleanup pass — `index.mjs` is the primary runtime; the
+  dynamic Host path is documented as legacy compatibility (kept, not removed);
+  no runtime behavior changed
 - **Formal experiment work:** frozen
 - **Next behavior changes:** should be driven by real usage problems, not speculative feature expansion
 

@@ -1,3 +1,19 @@
+// index.mjs — PRIMARY runtime entry of the standard DSH bundle
+// (package.json → dsh.bundle.patch → cordis.patch.yml; install via
+// `dsh plugin --profile <profile> add github:quaner1234-cmd/dsh-browser-completion-gate`).
+//
+// Loads the frozen verification core (gate/gate-core.js) and registers the
+// completion_gate_check tool through the host tools service.
+//
+// The legacy dynamic-Host path (gate/plugin-shell.js + gate/build-plugin.js →
+// gate/plugin-host.generated.js) implements the same tool over the SAME core
+// and is kept ONLY as a compatibility fallback.
+//
+// Browser-adapter note: dispatchBrowser()/parseSnapshot() consume the
+// dsh-browser text-snapshot labels ("URL:", "正文:", "交互元素", "表单字段").
+// That layout is not a stable API; parse mismatches fail closed (empty
+// evidence → BLOCKED/FAIL, never silent PASS). See docs/VERIFY.md for the
+// live smoke-test requirement after adapter changes.
 import gateCore from './gate/gate-core.js'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 

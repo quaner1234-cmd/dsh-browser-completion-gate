@@ -1,6 +1,6 @@
 # Gate checker vs final evaluator — cross-check agreement (pre-registration)
 
-Date: 2026-08-28T02:23:17.722Z
+Date: 2026-08-28T13:32:03.094Z
 Method: both channels read the same authoritative `fixtures/state/` on a
 TEMP copy (live experiment state untouched); `gate/check.js` never imports
 `fixtures/grader.js`. Verdicts compared per task/mode PASS/FAIL state.

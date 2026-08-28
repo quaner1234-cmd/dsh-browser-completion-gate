@@ -12,6 +12,19 @@ The plugin is the deliverable. Research, benchmarks, and experiments are support
 - Prefer the smallest verifiable change.
 - Default to engineering mode, not research mode.
 
+## Product paths
+
+- Primary runtime: `index.mjs` (standard DSH bundle entry) +
+  `gate/gate-core.js` (frozen v0.1.0 verification core). Install:
+  `dsh plugin --profile <profile> add github:quaner1234-cmd/dsh-browser-completion-gate`.
+- `gate/plugin-shell.js` / `gate/build-plugin.js` /
+  `gate/plugin-host.generated.js` are the LEGACY dynamic-Host compatibility
+  path — kept, not primary, not to be extended or treated as the default.
+- Do not change the verification semantics in `gate/gate-core.js`
+  (PASS / FAIL / BLOCKED rules are frozen v0.1.0 contract): unreliably
+  checkable → BLOCKED, definitively unmet → FAIL, all met → PASS, empty
+  conditions never PASS, unknown kind never PASS, probe error never PASS.
+
 ## Project-level stopping / escalation rule
 
 Use only the minimum evidence needed to decide the next engineering step.
@@ -40,4 +53,10 @@ Historical experiment documents are evidence, not active instructions.
 - Prefer existing capabilities over new architecture.
 - Configuration, code presence, and agent claims are not proof of success.
 - Runtime state, tool execution, tests, diffs, and observable outcomes are evidence.
+- An agent's own "done" report is never verification (`docs/VERIFY.md`).
+- After changing browser-adapter code (`dispatchBrowser()` / `parseSnapshot()` /
+  `makeProbes()`), a real DSH + dsh-browser smoke test is required; unit tests
+  with fake browser probes alone do not prove the live path.
+- Never delete, skip, or relax tests (or fixture checks) to make CI green —
+  report the failing condition instead.
 - Do not continue into the next milestone unless `docs/TASK.md` explicitly authorizes it.

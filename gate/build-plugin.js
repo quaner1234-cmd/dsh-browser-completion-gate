@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 'use strict'
-// gate/build-plugin.js — build step for the minimum Completion Gate prototype.
+// gate/build-plugin.js — LEGACY build step for the dynamic Host compatibility
+// path. The PRIMARY runtime is the standard DSH bundle entry index.mjs, which
+// imports gate/gate-core.js directly (no build step).
 //
-// Embeds gate/gate-core.js (the deterministic core; CommonJS tail stripped)
-// into gate/plugin-shell.js at the `__GATE_CORE__` marker and emits
+// This script embeds gate/gate-core.js (the deterministic core; CommonJS tail
+// stripped) into gate/plugin-shell.js at the `__GATE_CORE__` marker and emits
 // gate/plugin-host.generated.js: a single plain-JS function body, ready to be
 // handed to cordis_define code.host (or mounted as an agent preset) WITHOUT
 // any further build step tomorrow.

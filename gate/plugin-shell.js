@@ -1,7 +1,15 @@
-// gate/plugin-shell.js — SOURCE for the minimum Completion Gate dynamic Host
-// plugin. Not directly loadable: gate/build-plugin.js embeds gate-core.js at
-// the __GATE_CORE__ marker and emits gate/plugin-host.generated.js (the exact
+// gate/plugin-shell.js — SOURCE for the completion Gate dynamic Host plugin.
+// Not directly loadable: gate/build-plugin.js embeds gate-core.js at the
+// __GATE_CORE__ marker and emits gate/plugin-host.generated.js (the exact
 // function body to hand to cordis_define code.host, or to an agent preset).
+//
+// LEGACY / COMPATIBILITY FALLBACK — the PRIMARY runtime is the standard DSH
+// bundle entry `index.mjs` at the repository root (install:
+// `dsh plugin --profile <profile> add github:quaner1234-cmd/dsh-browser-completion-gate`).
+// This dynamic Host path is kept for debugging and for setups that cannot
+// install the bundle; it evaluates the SAME gate/gate-core.js (embedded at
+// build time) with identical PASS / FAIL / BLOCKED semantics. Do not treat it
+// as the main installation path.
 //
 // The plugin registers one tool, `completion_gate_check`, which evaluates a
 // declarative list of completion conditions against injected probes and

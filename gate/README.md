@@ -72,12 +72,36 @@ BLOCKED with explicit reasons.
 Relative `path`s resolve against the caller's workspace cwd; absolute paths
 are used as-is.
 
-## Installation / activation
+## Installation
 
-The plugin is a dynamic Host plugin; there is no npm package to install. The
-deliverable is one committed file, `gate/plugin-host.generated.js` — the exact
-`code.host` function body. Activation takes about one minute and needs **no
-DSH restart and no browser manipulation**:
+### Recommended — standard DSH bundle (primary path)
+
+This repository is packaged as a standard DSH bundle (`package.json` →
+`dsh.bundle.patch` → `cordis.patch.yml`; runtime entry `index.mjs`). Install
+it directly from GitHub into a DSH profile:
+
+```bash
+dsh plugin --profile <profile> add github:quaner1234-cmd/dsh-browser-completion-gate
+```
+
+For reproducible use, pin the Git dependency to a reviewed commit SHA instead
+of following a moving branch.
+
+After installation, `completion_gate_check` is available in the sessions of
+that profile. The bundle entry (`index.mjs`) loads `gate/gate-core.js`
+directly — the same frozen v0.1.0 verification core — and registers the tool
+through the normal host `tools` service. No DSH restart and no browser
+manipulation is needed.
+
+### Legacy / Fallback — dynamic Host plugin (no package install)
+
+The original v0.1.0 activation path is a **legacy / compatibility fallback**:
+it predates the bundle and is kept for debugging and for setups that cannot
+install the bundle. **New setups should use the standard bundle above.** On
+this path there is no npm package; the deliverable is one committed file,
+`gate/plugin-host.generated.js` — the exact `code.host` function body.
+Activation takes about one minute and needs **no DSH restart and no browser
+manipulation**:
 
 1. Open a DSH session on a preset that includes the Cordis plugin tools (the
    shipped `cordis` preset) with this repository as its workspace.
@@ -99,12 +123,16 @@ guard binds to the agent that first executed the tool; start a fresh DSH
 process if a clean activation with the guard bound to *this* agent is
 required.
 
-To rebuild the artifact from source after editing `gate/gate-core.js` or
-`gate/plugin-shell.js`:
+To rebuild the legacy artifact from source after editing `gate/gate-core.js`
+or `gate/plugin-shell.js`:
 
 ```bash
 node gate/build-plugin.js   # regenerates gate/plugin-host.generated.js
 ```
+
+Both paths evaluate the **same** `gate/gate-core.js` (`index.mjs` imports it;
+`build-plugin.js` embeds it into the legacy body) with identical
+PASS / FAIL / BLOCKED semantics.
 
 ## Minimal example
 
@@ -175,6 +203,14 @@ selection, SHA-256 vectors + node:crypto cross-check, conditionsPath handling,
 the armed-guard lifecycle against the generated plugin body, and fixture
 integration on a TEMP copy (the live `fixtures/state/` is never touched).
 
+**What these tests do NOT prove:** none of the three suites drives a real
+browser. `gate-core.test.js` injects fake browser probes, `plugin-shell.test.js`
+runs the generated body under mocks, and `check-agreement.test.js` is a fully
+offline checker-vs-grader cross-check. A change to the browser adapter
+(`dispatchBrowser()` / `parseSnapshot()` / `makeProbes()` in `index.mjs` or
+`gate/plugin-shell.js`) therefore requires a live DSH + dsh-browser smoke test
+in addition to this suite — see `docs/VERIFY.md`.
+
 ## What is deterministic
 
 - `file` and `json_state` checks are byte-deterministic for the same input:
@@ -187,36 +223,86 @@ integration on a TEMP copy (the live `fixtures/state/` is never touched).
 
 ## Repository layout (gate/)
 
+Primary runtime (shared by both activation paths):
+
 ```
-gate/gate-core.js                pure deterministic core (no DSH imports):
-                                 condition schema, selection, SHA-256, receipts
+gate/gate-core.js            frozen v0.1.0 deterministic core (no DSH imports):
+                             condition schema, selection, SHA-256, receipts.
+                             Imported by index.mjs (bundle entry); embedded
+                             into the legacy body by the build step.
+```
+
+Legacy compatibility (dynamic Host path — see *Legacy / Fallback* above):
+
+```
 gate/plugin-shell.js             dynamic Host plugin body SOURCE
-gate/build-plugin.js             build: embeds gate-core into the shell and
-                                 emits the paste-ready function body
+gate/build-plugin.js             legacy build: embeds gate-core into the shell
+                                 and emits the paste-ready function body
 gate/plugin-host.generated.js    generated, COMMITTED: the exact function body
                                  for cordis_define code.host (activation needs
                                  no build step)
-gate/gate-core.test.js           deterministic automated tests (node:test)
-gate/plugin-shell.test.js        integration tests over the generated artifact
+```
+
+Tests (run by CI; see docs/VERIFY.md for what they do NOT prove):
+
+```
+gate/gate-core.test.js           deterministic automated tests (node:test);
+                                 browser checks use fake probes — no real
+                                 browser is driven
+gate/plugin-shell.test.js        integration tests over the generated legacy
+                                 artifact with mock ctx/harness/tools/fs — no
+                                 real browser is driven
+gate/check-agreement.test.js     experiment-era checker-vs-grader agreement
+                                 test (kept in the CI suite; offline, temp
+                                 fixture copies)
+```
+
+Historical experiments / evidence (kept for provenance, not active code):
+
+```
 gate/check.js                    experiment-era CLI checker for the frozen
                                  baseline tasks (task-1/2/3); evidence tooling
-gate/check-agreement.test.js     checker-vs-grader agreement test
+gate/arm-runner.js               experiment-era Gate-arm trial runner source
+```
+
+Documentation:
+
+```
 gate/README.md                   this file
 ```
 
 ## Status / limitations
 
-- Working now: plugin mounts in a live DSH session without restart; file /
-  json_state / browser condition evaluation; PASS / FAIL / BLOCKED receipts;
-  conditions defined in a user-editable JSON file (`conditionsPath`);
-  armed per-agent tool guard (deny until PASS; released by PASS; removed on
-  stop).
+- Working now: plugin runs in a live DSH session (bundle path: installed via
+  `dsh plugin`; legacy path: dynamic Host activation); file / json_state /
+  browser condition evaluation; PASS / FAIL / BLOCKED receipts; conditions
+  defined in a user-editable JSON file (`conditionsPath`); armed per-agent
+  tool guard (deny until PASS; released by PASS; removed on stop).
 - Current DSH cannot veto a turn that ends without any tool call — see
   *Completion enforcement* above.
-- Dynamic plugins are per-session: each session that needs the gate must
-  activate it (step 2 of *Installation / activation*). A running plugin stays
-  alive until the DSH process exits, so an earlier session's activation makes a
-  later `cordis_run` report "tool already registered" — the tool is then
-  already live (see *Installation / activation*); restart DSH for a fresh copy.
+- The dynamic Host path is **legacy / compatibility only** (the standard
+  bundle is the recommended installation); it stays per-session: each session
+  that needs the gate via that path must activate it (step 2 of
+  *Legacy / Fallback*). A running plugin stays alive until the DSH process
+  exits, so an earlier session's activation makes a later `cordis_run` report
+  "tool already registered" — the tool is then already live (see
+  *Legacy / Fallback*); restart DSH for a fresh copy.
 - Browser checks require the dsh-browser bridge to have a controlled tab;
   without one they fail closed as BLOCKED, never PASS.
+
+## Known technical risks
+
+- **`parseSnapshot()` depends on the dsh-browser text snapshot shape**
+  (`URL:` / `正文:` / `交互元素` / `表单字段` labels). That layout is an
+  observed output format, not a documented stable API. The parser is
+  deliberately conservative: any parse mismatch surfaces as missing evidence
+  (empty fields) → the check FAILs or BLOCKs, never silently passes. This is
+  recorded as risk, not redesigned here — dsh-browser is reused as-is
+  (see `docs/VERIFY.md` for the live smoke-test requirement).
+- **Runtime duplication between `index.mjs` and `gate/plugin-shell.js`**
+  (agentTools, ensureGuard, randomId, agentCwd, dispatchBrowser,
+  parseSnapshot, makeProbes, gateGuard) is deliberate and recorded as
+  technical debt: the legacy body must stay a self-contained pastable
+  function, so sharing would require changing the legacy embedding build —
+  not worth it while the dynamic Host path is a frozen fallback. Do not
+  "fix" this by abstracting; see the repository root README.

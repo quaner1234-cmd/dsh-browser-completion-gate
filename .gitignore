@@ -1,6 +1,10 @@
 # macOS
 .DS_Store
 
+# Local installs for the standard bundle (npm install installs the dsh-tools
+# peer; CI installs fresh, no lockfile is committed)
+node_modules/
+
 # Machine-specific preflight backup (copies of local ~/.dsh web profile config)
 preflight-backup/
 
