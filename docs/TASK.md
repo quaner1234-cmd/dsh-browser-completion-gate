@@ -14,31 +14,44 @@ The plugin is usable now:
 - the narrow per-agent tool guard works within the current DSH API limits;
 - the README documents activation, examples, and the hard limitation that DSH cannot veto a model turn that ends without any tool call.
 
-## Status
+## Immediate task — publish v0.1.0
 
-Development is complete for v0.1.0.
+This is release hygiene only. Do not change plugin code or behavior.
 
-No active engineering or experiment milestone remains.
+Do exactly this:
 
-## Release hygiene only
+1. `git fetch origin` and verify the local repository is clean.
+2. Verify `origin/main` contains the accepted MVP and that `prototype/minimum-completion-gate` has no unmerged product changes that should be part of v0.1.0.
+3. Check whether tag `v0.1.0` already exists locally or remotely. If it already exists, do not overwrite it; report and stop.
+4. Check out/sync `main` to `origin/main` without rewriting history.
+5. Create an annotated tag on the exact accepted `main` HEAD:
+   `v0.1.0` with message `Completion Gate v0.1.0`.
+6. Push only that tag to origin.
+7. Verify the remote tag resolves to the same commit as the accepted `main` HEAD.
+8. If the already-installed/authenticated GitHub CLI (`gh`) is available, create a GitHub Release from `v0.1.0` with title `Completion Gate v0.1.0` and concise notes covering:
+   - deterministic PASS / FAIL / BLOCKED receipts;
+   - file, JSON-state, and browser completion conditions;
+   - user-editable `conditionsPath`;
+   - optional per-agent deny-tools guard;
+   - no new browser automation; browser checks reuse dsh-browser;
+   - known limitation: current DSH cannot veto a model turn that ends with no tool call;
+   - installation/activation instructions are in `gate/README.md`.
+9. If `gh` is unavailable or unauthenticated, do NOT install/configure/authenticate anything. Stop after the tag is verified and report the exact GitHub UI step needed to create the Release manually.
+10. Report the final `main` SHA, tag target SHA, whether the GitHub Release was created, and the release URL if available.
 
-Allowed repository-only actions:
+## Definition of DONE
 
-1. fast-forward the accepted working branch into `main`;
-2. create a `v0.1.0` tag/release;
-3. preserve `prototype/minimum-completion-gate` as historical development evidence if useful.
+DONE means the immutable `v0.1.0` tag exists on GitHub and points to the accepted `main` commit. A GitHub Release page should also exist if it can be created with already-available authenticated tooling; otherwise the tag alone completes the repository-side release and the remaining UI action is reported.
 
-Do not change plugin behavior during release hygiene.
+## Not authorized
 
-## Not authorized unless the human explicitly starts a new milestone
-
-- no formal experiments;
-- no Baseline/Gate trial collection;
-- no dedicated-profile or dual-session testing;
-- no statistical benchmarking;
-- no new completion-loop framework;
-- no new condition types;
-- no unrelated refactors or dependency upgrades;
+- no plugin code changes;
+- no experiments;
+- no new tests beyond a repository-state check;
+- no dependency changes;
+- no branch-history rewrites or force pushes;
+- no tag overwrite;
+- no installing/configuring/authenticating `gh` or other tools;
 - no feature expansion.
 
-If no explicit new milestone is given, remain frozen at v0.1.0 candidate.
+After release hygiene, STOP.
