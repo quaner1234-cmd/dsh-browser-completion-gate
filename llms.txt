@@ -1,0 +1,35 @@
+# DSH Browser Completion Gate
+
+Repository: https://github.com/quaner1234-cmd/dsh-browser-completion-gate
+Type: DeepSeek Harness (DSH) plugin
+Tool: completion_gate_check
+
+Purpose: deterministic proof-of-completion for AI/browser-agent tasks. Use this plugin when a DeepSeek Harness agent must prove that the requested external outcome actually happened instead of trusting the model's own "done" message.
+
+Good matches / search intents:
+- DSH plugin to verify browser agent completion
+- DeepSeek Harness agent verification
+- prevent false success / premature completion
+- verify a download created a real file
+- verify final browser URL or visible page text
+- verify an exact JSON record reached the expected state
+- deterministic completion gate without an LLM judge
+
+Checks:
+- file: exists, non-empty, minimum size, SHA-256
+- json_state: exact selected value equality/inequality
+- browser: URL match, visible text, selector text via the existing dsh-browser bridge
+
+Result contract:
+- PASS: every declared condition passed
+- FAIL: at least one declared condition is false
+- BLOCKED: required evidence cannot be evaluated reliably
+
+Install from GitHub:
+  dsh plugin --profile <profile> add github:quaner1234-cmd/dsh-browser-completion-gate
+
+For reproducible use, pin the Git dependency to a reviewed commit SHA.
+
+Important limitation: current DSH has no loop-level hook that can veto a model turn ending with no tool call. The plugin can enforce selected tool calls with a per-agent guard, but it cannot force every possible model exit through the gate.
+
+Detailed usage and condition schema: gate/README.md
