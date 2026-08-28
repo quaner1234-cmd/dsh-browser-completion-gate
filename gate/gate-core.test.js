@@ -335,6 +335,55 @@ test('receipt: request-level malformation -> BLOCKED with request_error; empty c
   assert.ok(r.request_error.length > 0)
 })
 
+test('receipt: conditionsPath loads the conditions from a JSON file; any failure -> BLOCKED', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-cp-'))
+  fs.writeFileSync(path.join(dir, 'v.json'), JSON.stringify({ v: 1 }))
+  const conds = [{ id: 'a', kind: 'json_state', path: 'v.json', select: '/v', expect: 1 }]
+  fs.writeFileSync(path.join(dir, 'conds.json'), JSON.stringify(conds))
+
+  // valid file -> PASS with identical checks to the inline form
+  const ok = await core.evaluateGate(
+    { conditionsPath: 'conds.json', context: { src: 'file' } },
+    fileProbes(dir),
+  )
+  assert.equal(ok.overall, 'PASS')
+  assert.equal(ok.checks.length, 1)
+  assert.equal(ok.checks[0].id, 'a')
+  assert.deepEqual(ok.context, { src: 'file' })
+  const inline = await core.evaluateGate({ conditions: conds }, fileProbes(dir))
+  assert.deepEqual(ok.checks, inline.checks)
+
+  // both given -> BLOCKED, never silently prefers one
+  const both = await core.evaluateGate({ conditions: [], conditionsPath: 'conds.json' }, fileProbes(dir))
+  assert.equal(both.overall, 'BLOCKED')
+  assert.ok(both.request_error.includes('not both'))
+
+  // missing / unreadable file -> BLOCKED (missing evidence, never PASS)
+  const missing = await core.evaluateGate({ conditionsPath: 'nope.json' }, fileProbes(dir))
+  assert.equal(missing.overall, 'BLOCKED')
+  assert.ok(missing.request_error.includes('cannot read conditionsPath'))
+
+  // non-JSON content -> BLOCKED
+  fs.writeFileSync(path.join(dir, 'bad.json'), '{ nope')
+  const bad = await core.evaluateGate({ conditionsPath: 'bad.json' }, fileProbes(dir))
+  assert.equal(bad.overall, 'BLOCKED')
+  assert.ok(bad.request_error.includes('not valid JSON'))
+
+  // JSON that is not an array -> BLOCKED
+  fs.writeFileSync(path.join(dir, 'obj.json'), JSON.stringify({ kind: 'file' }))
+  const obj = await core.evaluateGate({ conditionsPath: 'obj.json' }, fileProbes(dir))
+  assert.equal(obj.overall, 'BLOCKED')
+  assert.ok(obj.request_error.includes('array of conditions'))
+
+  // empty or non-string conditionsPath -> BLOCKED
+  const emptyPath = await core.evaluateGate({ conditionsPath: '' }, fileProbes(dir))
+  assert.equal(emptyPath.overall, 'BLOCKED')
+  assert.ok(emptyPath.request_error.length > 0)
+  const nonStr = await core.evaluateGate({ conditionsPath: 42 }, fileProbes(dir))
+  assert.equal(nonStr.overall, 'BLOCKED')
+  assert.ok(nonStr.request_error.length > 0)
+})
+
 test('receipt: PASS and FAIL receipts both carry expected + observed per check', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gate-receipt-'))
   fs.writeFileSync(path.join(dir, 's.json'), JSON.stringify({ v: 1 }))

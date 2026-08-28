@@ -13,6 +13,48 @@ return {
     const core = __GATE_CORE__
     const MAX_BYTES = 16 * 1024 * 1024
 
+    // --- completion-enforcement state --------------------------------------
+    //
+    // Current DSH cannot veto turn completion (verified against dsh-agent-loop:
+    // `turn/end` is appended unconditionally; a turn completes when the model
+    // emits a message with no tool calls, or when a tool result concludes the
+    // turn). The narrowest practical lever is the tools.guard: while the gate
+    // is ARMED and the last receipt is not PASS, calls to the configured
+    // completion-relevant tool names are denied with an explicit reason. This
+    // never blocks the "model finishes without calling any tool" exit, which
+    // is documented as a hard limitation of the contract.
+    //
+    // The dynamic-plugin sandbox only exposes a restricted `tools` wrapper
+    // (register/schemas/get — no guard, no execute), so the REAL tools service
+    // is reached through the executing agent's own scoped context
+    // (`exec.agent.ctx`), which is what scopes the guard to this one agent.
+
+    let armed = false
+    let denyTools = [] // completion-relevant tool names denied until PASS
+    let lastOverall = null
+    let guardDispose = null
+
+    // The agent-scoped tools service behind one tool execution.
+    function agentTools(exec) {
+      const agent = exec && exec.agent
+      const actx = agent && agent.ctx
+      if (!actx || typeof actx.get !== 'function') return undefined
+      const tools = actx.get('tools')
+      return tools && typeof tools === 'object' ? tools : undefined
+    }
+
+    // Register the completion guard on the agent's OWN tools layer on the
+    // first execution (apply() has no exec yet). The real tools service is
+    // not reachable through the sandbox ctx wrapper; exec.agent.ctx is the
+    // agent's real scoped context.
+    function ensureGuard(exec) {
+      if (guardDispose !== null) return
+      const tools = agentTools(exec)
+      if (tools && typeof tools.guard === 'function') {
+        guardDispose = tools.guard(gateGuard)
+      }
+    }
+
     function randomId(prefix) {
       const chars = '0123456789abcdef'
       let s = ''
@@ -75,7 +117,10 @@ return {
 
     function makeProbes(exec) {
       const fs = ctx.get('fs')
-      const tools = ctx.get('tools')
+      // The sandbox's `tools` wrapper has no execute; dispatch through the
+      // agent's real tools service so browser checks reuse the existing
+      // dsh-browser bridge (no browser automation of our own).
+      const tools = agentTools(exec) || ctx.get('tools')
       const cwd = agentCwd(exec)
       return {
         async readFile(path) {
@@ -113,45 +158,31 @@ return {
 
     // --- tool -------------------------------------------------------------
 
-    const checkSchema = {
-      type: 'object',
-      additionalProperties: false,
-      properties: {
-        id: { type: 'string' },
-        kind: { type: 'string', required: true },
-        path: { type: 'string' },
-        exists: { type: 'boolean' },
-        nonEmpty: { type: 'boolean' },
-        minBytes: { type: 'number' },
-        sha256: { type: 'string' },
-        select: { type: 'json' },
-        expect: { type: 'json' },
-        op: { type: 'string' },
-        check: { type: 'string' },
-        pattern: { type: 'string' },
-        text: { type: 'string' },
-        selector: { type: 'string' },
-      },
-    }
-
     const tool = {
       name: 'completion_gate_check',
       description:
-        'Deterministically verify explicit completion conditions and return a machine-readable verification receipt (overall PASS | FAIL | BLOCKED) with per-check expected and observed evidence. Supported condition kinds: "file" (exists, nonEmpty, minBytes, sha256 of a file), "json_state" (read a JSON state file, select a value by JSON pointer or segment array with { find: {...} } for exact targets, compare with expect via eq|ne), and "browser" (url_matches, visible_text_contains, selector_text — evaluated through the existing dsh-browser bridge). Never an LLM judge; a check that cannot be evaluated is BLOCKED, never silently successful.',
+        'Deterministically verify explicit completion conditions and return a machine-readable verification receipt (overall PASS | FAIL | BLOCKED) with per-check expected and observed evidence. Conditions are given inline as "conditions" or read from a JSON file via "conditionsPath" (a JSON array of condition objects; relative paths resolve against the caller cwd). Supported condition kinds: "file" (exists, nonEmpty, minBytes, sha256 of a file), "json_state" (read a JSON state file, select a value by JSON pointer or segment array with { find: {...} } for exact targets, compare with expect via eq|ne), and "browser" (url_matches, visible_text_contains, selector_text — evaluated through the existing dsh-browser bridge). Optional "arm": { denyTools: ["name", ...] } arms the completion guard for this session — until this tool returns overall PASS, calls to the named tools are denied with an explicit reason (note: DSH cannot veto a turn that ends without any tool call; the guard is the narrowest available enforcement and cannot block that exit). Never an LLM judge; a check that cannot be evaluated is BLOCKED, never silently successful.',
       parameters: {
         type: 'object',
         properties: {
           conditions: {
             type: 'array',
             description:
-              'Declarative conditions to evaluate. Each item: { id?, kind: "file"|"json_state"|"browser", ...kind-specific fields }. See gate/README.md for the exact schema and the three-task mappings.',
+              'Declarative conditions to evaluate. Each item: { id?, kind: "file"|"json_state"|"browser", ...kind-specific fields }. Exactly one of this or conditionsPath must be given. See gate/README.md for the exact schema and examples.',
+          },
+          conditionsPath: {
+            type: 'string',
+            description:
+              'Path to a JSON file containing the conditions array (relative paths inside it resolve against the caller cwd). The user-editable way to define completion conditions. Exactly one of this or conditions must be given.',
           },
           context: {
-            type: 'json',
             description: 'Optional caller context echoed verbatim in the receipt (e.g. { trial: "t3-01" }).',
           },
+          arm: {
+            description:
+              'Optional enforcement: { denyTools: [toolName, ...] }. Arms the completion guard for this session with that deny list; while the last receipt is not PASS, calls to those tools are denied. Pass an empty array to arm without denying anything.',
+          },
         },
-        required: ['conditions'],
       },
       output: {
         schema: {
@@ -187,17 +218,58 @@ return {
         render: (_args, value) => [{ type: 'text', text: JSON.stringify(value) }],
       },
       async execute(args, exec) {
+        ensureGuard(exec)
         const receipt = await core.evaluateGate(
           {
             conditions: args.conditions,
+            conditionsPath: args.conditionsPath,
             context: args.context === undefined ? null : args.context,
             base: '',
           },
           makeProbes(exec),
         )
+        // Enforcement state: every evaluation refreshes the last receipt; a
+        // call that carries `arm` (re)arms the guard with its deny list.
+        lastOverall = receipt.overall
+        if (args.arm !== undefined) {
+          armed = true
+          denyTools = Array.isArray(args.arm && args.arm.denyTools)
+            ? args.arm.denyTools.filter((s) => typeof s === 'string')
+            : []
+        }
         return receipt
       },
     }
+
+    // --- completion guard ---------------------------------------------------
+    // tools.guard is the narrowest completion-enforcement lever current DSH
+    // offers: a synchronous per-call denial. It only vetoes tool calls — the
+    // "model stops without any tool call" completion exit cannot be vetoed by
+    // any current DSH API, and that limitation is documented in gate/README.md.
+
+    function gateGuard(exec) {
+      if (!armed || lastOverall === 'PASS') return undefined
+      if (exec && denyTools.indexOf(exec.name) !== -1) {
+        return (
+          'completion_gate: tool "' + exec.name + '" is denied until completion_gate_check ' +
+          'returns overall PASS (last receipt: ' + String(lastOverall) + '); run the gate check first'
+        )
+      }
+      return undefined
+    }
+
+    // The agent-scoped guard is registered lazily on first execution and must
+    // be removed when this plugin stops; ctx.effect owns that disposal.
+    ctx.effect(() => () => {
+      if (guardDispose !== null) {
+        try {
+          guardDispose()
+        } catch (e) {
+          // disposal must never break plugin teardown
+        }
+        guardDispose = null
+      }
+    })
 
     return harness.registerTool(ctx, harness.defineTool(tool))
   },

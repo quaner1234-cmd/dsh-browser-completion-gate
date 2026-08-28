@@ -366,7 +366,8 @@ async function evaluateCondition(cond, probes, base) {
 // Receipt builder.
 // ---------------------------------------------------------------------------
 
-// request: { conditions: [...], context?: any, base?: string }
+// request: { conditions: [...], conditionsPath?: string, context?: any,
+//            base?: string }
 // probes:  { readFile(path)->{exists,size?,bytes?,sha256?},
 //            readText(path)->string,
 //            browserProbe()->{url?,visibleText?,raw?},
@@ -378,17 +379,61 @@ async function evaluateGate(request, probes) {
   const generatedAt = new Date().toISOString()
   const checks = []
   let requestError = null
-  let conditions
+  let conditions = []
+  const base = request && typeof request.base === 'string' ? request.base : ''
   if (!request || typeof request !== 'object' || Array.isArray(request)) {
-    requestError = 'gate request must be an object with a "conditions" array'
+    requestError = 'gate request must be an object with a "conditions" array or a "conditionsPath" string'
     conditions = []
   } else if (Array.isArray(request.conditions)) {
-    conditions = request.conditions
+    if (request.conditionsPath !== undefined) {
+      requestError = 'gate request accepts either "conditions" or "conditionsPath", not both'
+      conditions = []
+    } else {
+      conditions = request.conditions
+    }
+  } else if (typeof request.conditionsPath === 'string') {
+    // conditionsPath: the caller points at a JSON file holding the condition
+    // array, so completion conditions are defined in a user-editable file
+    // instead of inline tool arguments. Read failures and non-array files are
+    // BLOCKED — never silently judged against empty conditions.
+    const cp = resolvePath(request.conditionsPath, base)
+    if (cp === null || cp === '') {
+      requestError = 'gate request requires a non-empty "conditionsPath" string'
+      conditions = []
+    } else if (typeof probes.readText !== 'function') {
+      requestError = 'gate request used "conditionsPath" but the text probe is unavailable'
+      conditions = []
+    } else {
+      let text
+      try {
+        text = await probes.readText(cp)
+      } catch (e) {
+        requestError = 'cannot read conditionsPath ' + cp + ': ' + String((e && e.message) || e)
+        conditions = []
+      }
+      if (requestError === null) {
+        let parsed
+        try {
+          parsed = JSON.parse(text)
+        } catch (e) {
+          requestError = 'conditionsPath ' + cp + ' is not valid JSON: ' + String((e && e.message) || e)
+        }
+        if (requestError === null) {
+          if (!Array.isArray(parsed)) {
+            requestError = 'conditionsPath ' + cp + ' must contain a JSON array of conditions'
+          } else {
+            conditions = parsed
+          }
+        }
+      }
+    }
+  } else if (request.conditionsPath !== undefined) {
+    requestError = 'gate request requires a non-empty "conditionsPath" string'
+    conditions = []
   } else {
-    requestError = 'gate request requires a "conditions" array'
+    requestError = 'gate request requires a "conditions" array or a "conditionsPath" string'
     conditions = []
   }
-  const base = request && typeof request.base === 'string' ? request.base : ''
 
   for (const cond of conditions) {
     const result = await evaluateCondition(cond, probes, base)
