@@ -90,6 +90,15 @@ DSH restart and no browser manipulation**:
 3. Wait for the run to report `running`, then call `completion_gate_check`
    with your conditions (see example below).
 
+If `cordis_run` reports that `completion_gate_check` is **already registered**
+(a running dynamic plugin stays alive for the whole DSH process, so an earlier
+session in the same process may have activated the gate), the gate is already
+live in this process: skip steps 2–3, confirm the tool in the agent's own tool
+list, and call `completion_gate_check` directly. Note that the per-agent tool
+guard binds to the agent that first executed the tool; start a fresh DSH
+process if a clean activation with the guard bound to *this* agent is
+required.
+
 To rebuild the artifact from source after editing `gate/gate-core.js` or
 `gate/plugin-shell.js`:
 
@@ -205,6 +214,9 @@ gate/README.md                   this file
 - Current DSH cannot veto a turn that ends without any tool call — see
   *Completion enforcement* above.
 - Dynamic plugins are per-session: each session that needs the gate must
-  activate it (step 2 of *Installation / activation*).
+  activate it (step 2 of *Installation / activation*). A running plugin stays
+  alive until the DSH process exits, so an earlier session's activation makes a
+  later `cordis_run` report "tool already registered" — the tool is then
+  already live (see *Installation / activation*); restart DSH for a fresh copy.
 - Browser checks require the dsh-browser bridge to have a controlled tab;
   without one they fail closed as BLOCKED, never PASS.
