@@ -1,0 +1,68 @@
+name: verify
+
+on:
+  push:
+    branches: [main, discoverability-bundle-v0.1.0]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install package peers
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Run existing Completion Gate tests
+        run: node --test gate/gate-core.test.js gate/plugin-shell.test.js gate/check-agreement.test.js
+
+      - name: Verify standard DSH plugin entry registers the tool
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { apply, name } from './index.mjs'
+
+          const registered = []
+          const ctx = {
+            tools: {
+              register(tool) {
+                registered.push(tool)
+                return () => {}
+              },
+            },
+            effect() {},
+          }
+
+          assert.equal(name, 'browser-completion-gate')
+          const dispose = apply(ctx)
+          assert.equal(typeof dispose, 'function')
+          assert.equal(registered.length, 1)
+          assert.equal(registered[0].name, 'completion_gate_check')
+          console.log('standard entry registered completion_gate_check')
+          NODE
+
+      - name: Verify DSH bundle metadata
+        run: |
+          node <<'NODE'
+          const assert = require('node:assert/strict')
+          const fs = require('node:fs')
+          const pkg = require('./package.json')
+
+          assert.equal(pkg.name, 'dsh-browser-completion-gate')
+          assert.equal(pkg.dsh.bundle.patch, './cordis.patch.yml')
+          const patch = fs.readFileSync('cordis.patch.yml', 'utf8')
+          assert.match(patch, /id:\s*browser-completion-gate/)
+          assert.match(patch, /name:\s*dsh-browser-completion-gate/)
+          assert.ok(pkg.keywords.includes('dsh-plugin'))
+          assert.ok(fs.existsSync('llms.txt'))
+          console.log('bundle metadata verified')
+          NODE
+
+      - name: Verify packed payload
+        run: npm pack --dry-run
