@@ -1,0 +1,3 @@
+- insert:
+    - id: browser-completion-gate
+      name: dsh-browser-completion-gate
