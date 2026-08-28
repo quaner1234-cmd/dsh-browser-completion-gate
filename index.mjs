@@ -133,6 +133,7 @@ export function apply(ctx) {
       },
       arm: {
         type: 'object',
+        additionalProperties: false,
         properties: {
           denyTools: {
             type: 'array',
