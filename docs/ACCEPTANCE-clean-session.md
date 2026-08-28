@@ -92,5 +92,8 @@ A fresh session can follow `gate/README.md` and obtain real, deterministic
 PASS / FAIL / BLOCKED receipts — satisfied (the previously-failing activation
 step is now documented for the already-registered case and was rerun against
 the live registration). No experiments were run, no features were added, no
-code was changed: only `gate/README.md` (two documentation notes) and this
-note were added. As directed, development stops here.
+code was changed: only `gate/README.md` (two documentation notes), this
+note, and the test-regenerated timestamp header of
+`results/gate-checker-agreement.md` (the README-documented agreement test
+rewrites the date each run; content otherwise unchanged — agreement still
+holds). As directed, development stops here.
