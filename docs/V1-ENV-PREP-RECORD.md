@@ -226,3 +226,72 @@ Status: **BLOCKED** (one human Chrome-GUI action pending; everything else verifi
 In the open dsh side panel, select the current page for this session (the
 panel tab-handoff prompt shows the lost controlled tab; reselect the target
 page), then say continue. No restart/reload needed.
+
+---
+
+# Addendum 3 — Runtime verification round 3 (2026-08-28 ~09:05 CST)
+
+Status: **PASS** for this milestone (current-session smoke check on the pinned
+runtime). The full two-session tab-affinity invariant test is NOT run — it
+requires the dedicated execution Chrome profile and therefore a Human Gate
+(see below and `docs/EXPERIMENT-V1.md`).
+
+## Evidence
+
+1. **Process**: PID **1320** (`dsh web --no-open`), started **2026-08-28
+   08:33:50** ("ready after 7s") — another real restart on the pinned build,
+   replacing round-2 PID 12865. Launcher history also shows a transient
+   00:30:34 failure (`duplicate loader entry id: bridge-browser`) that the
+   00:34:20 boot already resolved; no effect this round.
+2. **/ext/bridge-config**: HTTP 200, `{"wsUrl":"ws://127.0.0.1:3080/ext/bridge"}`
+   (re-verified this round).
+3. **Session under test**: `session-a0551219-3706-43f9-bba3-f40a15c52f7c`
+   (current chat, created 08:41). Tool-call frames carry this session id and
+   resolve against the extension's per-session tab map.
+4. **Rebind verification sequence** — the rebind visibly progressed through
+   three distinct runtime states:
+   a. First call after the human's initial rebind → fail-closed
+      `content-unavailable` "The controlled tab was closed...": the earlier
+      panel click had NOT attached to this session. Root cause from pinned
+      source: the "use current page" decision binds `sessionRef.current` —
+      the conversation open in the panel (panel/App.tsx:1486) — so a click
+      made with another/no conversation open binds nothing for this session
+      (a stale revision silently drops the click too).
+   b. After the human re-ran the decision with this session open in the
+      panel → the NEW fail-closed error "The current page does not support
+      browser operations. Switch to a standard http or https page."
+      (extension `background/tools.ts:452-453` `isInjectablePage` gate):
+      the session was now bound, but to a non-injectable (chrome://-class)
+      page. This is the pinned gate refusing to operate a restricted page.
+   c. After the human bound a standard page → **first successful call on the
+      pinned runtime**: `browser_snapshot` = `https://www.bing.com/`, title
+      "Search - Microsoft Bing", status complete, full interactive inventory.
+5. **Smoke matrix** (all on the explicitly selected Bing page):
+   - `browser_snapshot` → OK (title/url/status/60 interactive targets).
+   - `browser_get_text #sb_form_q` → OK, empty string (honest read of an
+     empty search input).
+   - `browser_get_text #b_content`, `main` → OK, honest
+     "No element matched selector: …".
+   - `browser_get_text body` → OK, full page text (quiz + ~20 news headlines
+     + footer).
+   - `browser_wait 800` → OK: "The page is stable after an additional 800ms
+     wait. Page change v2 (https://www.bing.com/) Status: complete (No
+     visible changes.)"
+6. **No silent retarget**: every call in the series reported the same
+   controlled URL `https://www.bing.com/`; each earlier failure was a
+   documented fail-closed refusal, never an operation on an unintended page.
+   Session-scoped fail-closed tab affinity is now verified LIVE on the pinned
+   runtime for the current session.
+7. **Deferred (per milestone stop condition)**: the full two-session
+   invariant set (Session A→Tab A, Session B→Tab B, focus-switch
+   no-retarget, SW-restore, tab-close fallback) requires the dedicated
+   execution Chrome profile and is NOT attempted here.
+
+## Human setup required before the next milestone
+
+Per `docs/EXPERIMENT-V1.md`: create/designate a **dedicated execution Chrome
+profile** that contains no DSH observer GUI and no normal browsing tabs
+during formal trials (the observer UI stays outside it), load the pinned
+0.1.2 extension there, and start Chrome with it. Profile creation, Chrome
+start, and reload/restart actions are Human Gate operations. After that
+setup, the next milestone runs the two-session control-invariant checks.
